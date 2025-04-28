@@ -1,0 +1,129 @@
+﻿@model IEnumerable<PID.Models.ProjetoPD>
+
+<h1>Projetos P&D</h1>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="input-group w-50">
+        <input type="text" id="searchInput" class="form-control" placeholder="Procurar projeto...">
+        <button class="btn btn-outline-primary"><i class="fas fa-search"></i></button>
+    </div>
+    <a asp-action="Create" class="btn btn-primary">+ Novo Projeto</a>
+</div>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th></th>
+            <th>Ações</th>
+            <th>ID</th>
+            <th>Título</th>
+            <th>Ano</th>
+            <th>Finep</th>
+            <th>Lei do Bem</th>
+            <th>Custo Total</th>
+        </tr>
+    </thead>
+    <tbody id="projectTable">
+        @foreach (var item in Model)
+        {
+            var custoTotal = item.Desenvolvimentos?.Sum(d => d.Custo) ?? 0;
+
+            <tr>
+                <td class="text-center align-middle" style="width:40px;">
+                    <button class="btn btn-sm btn-outline-secondary toggle-btn" type="button">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </td>
+                <td>
+                    <div class="dropdown">
+                        <button class="btn btn-info dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-cogs"></i> Ações
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" asp-action="Details" asp-route-id="@item.Id">Detalhes</a></li>
+                            <li><a class="dropdown-item" asp-action="Edit" asp-route-id="@item.Id">Editar</a></li>
+                            <li><a class="dropdown-item text-danger" asp-action="Delete" asp-route-id="@item.Id">Excluir</a></li>
+                        </ul>
+                    </div>
+                </td>
+                <td>@item.Id</td>
+                <td>@item.Titulo</td>
+                <td>@item.Ano</td>
+                <td>@(item.ProjetoFinep ? "✔" : "")</td>
+                <td>@(item.ProjetoLeiBem ? "✔" : "")</td>
+                <td>R$ @custoTotal.ToString("N2")</td>
+            </tr>
+
+            <tr class="details-row" style="display:none;">
+                <td colspan="8">
+                    <table class="table table-bordered bg-light">
+                        <thead>
+                            <tr class="text-center table-secondary">
+                                <th>Classificação</th>
+                                <th>Produto</th>
+                                <th>Descrição</th>
+                                <th>Data Início</th>
+                                <th>Data Fim</th>
+                                <th>Custo</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var des in item.Desenvolvimentos)
+                            {
+                                <tr class="text-center">
+                                    <td>@des.Classificacao</td>
+                                    <td>@des.Produto</td>
+                                    <td>@des.Descricao</td>
+                                    <td>@des.DataInicio.ToShortDateString()</td>
+                                    <td>@(des.DataFim != DateTime.MinValue ? des.DataFim.ToShortDateString() : "Em andamento")</td>
+                                    <td>R$ @des.Custo.ToString("N2")</td>
+                                    <td>
+                                        <a class="btn btn-sm btn-warning" asp-controller="Desenvolvimentoes" asp-action="Edit" asp-route-id="@des.IdDesenvolvimento"><i class="fas fa-pencil-alt"></i></a>
+                                        <a class="btn btn-sm btn-info" asp-controller="Desenvolvimentoes" asp-action="Details" asp-route-id="@des.IdDesenvolvimento"><i class="fas fa-search"></i></a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<script>
+    document.querySelectorAll(".toggle-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            let icon = btn.querySelector("i");
+            let detailsRow = btn.closest("tr").nextElementSibling;
+
+            if (detailsRow.style.display === "none") {
+                detailsRow.style.display = "";
+                icon.classList.remove("fa-chevron-down");
+                icon.classList.add("fa-chevron-up");
+            } else {
+                detailsRow.style.display = "none";
+                icon.classList.remove("fa-chevron-up");
+                icon.classList.add("fa-chevron-down");
+            }
+        });
+    });
+
+    document.getElementById("searchInput").addEventListener("keyup", function () {
+        let filter = this.value.toLowerCase();
+        let rows = document.querySelectorAll("#projectTable > tr:not(.details-row)");
+
+        rows.forEach(mainRow => {
+            let detailsRow = mainRow.nextElementSibling;
+            let combinedText = (mainRow.innerText + detailsRow.innerText).toLowerCase();
+            let display = combinedText.includes(filter) ? "" : "none";
+            mainRow.style.display = display;
+            detailsRow.style.display = "none";
+
+            let icon = mainRow.querySelector(".toggle-btn i");
+            icon.classList.remove("fa-chevron-up");
+            icon.classList.add("fa-chevron-down");
+        });
+    });
+</script>
